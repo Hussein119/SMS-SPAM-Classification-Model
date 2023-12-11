@@ -131,21 +131,21 @@ X_train, X_temp, y_train, y_temp = train_test_split(X_resampled, y_resampled, te
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
 # Implement the ID3 Algorithm and Train the Model
-clf = Id3Estimator()
-clf.fit(X_train.toarray(), y_train, check_input=True)
+model = Id3Estimator()
+model.fit(X_train.toarray(), y_train, check_input=True)
 
 # Visualize the Decision Tree
-export_graphviz(clf.tree_, 'tree.dot', feature_names=vectorizer.get_feature_names_out())
+export_graphviz(model.tree_, 'tree.dot', feature_names=vectorizer.get_feature_names_out())
 
 # Metrics for Validation Set
-X_val_dense = X_val.toarray()
-y_val_pred = clf.predict(X_val_dense)
+X_val_arr = X_val.toarray()
+y_val_pred = model.predict(X_val_arr)
 
 print("Accuracy on Validation Set:", accuracy_score(y_val, y_val_pred))
 
 # Evaluate the Model on Test Set
-X_test_dense = X_test.toarray()
-y_test_pred = clf.predict(X_test_dense)
+X_test_arr = X_test.toarray()
+y_test_pred = model.predict(X_test_arr)
 
 print("Accuracy on Test Set:", accuracy_score(y_test, y_test_pred))
 ```
