@@ -15,14 +15,14 @@ This repository houses a machine learning model designed to detect spam messages
 - **Description:** Classifies SMS messages as spam or ham.
 - **Records:** 5573
 - **Target variable:** Spam classification (spam or ham)
-- **Python libraries:** `pandas`, `scikit-learn`
+- **Python libraries:** `pandas`, `scikit-learn`, `id3`
 
 ## Getting Started
 
 ### Prerequisites
 
 - Python 3
-- Libraries: pandas, scikit-learn
+- Libraries: pandas, scikit-learn, and id3
 
 Install the required libraries using:
 
@@ -65,7 +65,17 @@ python main.py
 
 > Class distribution:\
 > ham 4825\
-> spam 747
+> spam 747\
+> Class distribution after Undersample:\
+> ham 747\
+> spam 747\
+> Accuracy on Validation Set: 0.9285714285714286\
+> Accuracy on Test Set: 0.8977777777777778\
+> tree command :
+
+```
+dot -Tpdf tree.dot -o tree.pdf
+```
 
 1. **Undersampling (Downsampling):**
 
@@ -90,62 +100,52 @@ python main.py
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.tree import DecisionTreeClassifier, plot_tree
-from sklearn.metrics import accuracy_score, classification_report
+from id3 import Id3Estimator
+from id3 import export_graphviz
 import matplotlib.pyplot as plt
-import graphviz
-from sklearn.tree import export_graphviz
+from sklearn.metrics import accuracy_score, classification_report
 from imblearn.under_sampling import RandomUnderSampler
 
-# Step 1: Load the dataset
 df = pd.read_csv('spam.csv', encoding='latin-1')
 
-# Step 2: Check the Loaded dataset
 print(df.head())
 print("Columns:", df.columns)
-print("Missing values:\n", df.isnull().sum())
-print("Class distribution:\n", df['v1'].value_counts())
+print("Class distribution:\n", df['v1'].value_counts()) # values to see the spam and hum sum
 
-# Step 3: Preprocess the Data
+# Preprocess the Data
 df = df.drop(['Unnamed: 2', 'Unnamed: 3', 'Unnamed: 4'], axis=1)
 
-# Step 4: Feature Extraction
 # Using CountVectorizer to convert text data to a format suitable for machine learning
 vectorizer = CountVectorizer()
-X = vectorizer.fit_transform(df['v2'])
+X = vectorizer.fit_transform(df['v2']) # fit transform to messages v2 (X)
 
-# Step 5: Undersample the Majority Class
+# Undersample the majority class (ham)
 rus = RandomUnderSampler(random_state=42)
 X_resampled, y_resampled = rus.fit_resample(X, df['v1'])
+print("Class distribution after Undersample:\n", y_resampled.value_counts())
 
-# Step 6.1: Split into Training (70%) and Temporary Data (30%)
+# Split into Training (70%) and Temporary Data (30%)
 X_train, X_temp, y_train, y_temp = train_test_split(X_resampled, y_resampled, test_size=0.3, random_state=42)
 
-# Step 6.2: Split Temporary Data into Validation (50%) and Test (50%)
+# Split Temporary Data into Validation (50%) and Test (50%)
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
-# Step 7: Implement the ID3 Algorithm
-# Step 8: Train the Model
-clf = DecisionTreeClassifier()
-clf.fit(X_train, y_train)
+# Implement the ID3 Algorithm and Train the Model
+clf = Id3Estimator()
+clf.fit(X_train.toarray(), y_train, check_input=True)
 
-# Step 9: Evaluate the Model on Validation Set
-y_val_pred = clf.predict(X_val)
-
-# Corrected part: Use vectorizer.get_feature_names_out() for feature names
-plt.figure(figsize=(18, 12))
-plot_tree(clf, filled=True, feature_names=vectorizer.get_feature_names_out(), class_names=['non-spam', 'spam'], rounded=True)
-# plt.show()
+# Visualize the Decision Tree
+export_graphviz(clf.tree_, 'tree.dot', feature_names=vectorizer.get_feature_names_out())
 
 # Metrics for Validation Set
+X_val_dense = X_val.toarray()
+y_val_pred = clf.predict(X_val_dense)
+
 print("Accuracy on Validation Set:", accuracy_score(y_val, y_val_pred))
-print("Classification Report on Validation Set:\n", classification_report(y_val, y_val_pred))
 
-# Step 10: Evaluate the Model on Test Set
-y_test_pred = clf.predict(X_test)
+# Evaluate the Model on Test Set
+X_test_dense = X_test.toarray()
+y_test_pred = clf.predict(X_test_dense)
 
-# Metrics for Test Set
 print("Accuracy on Test Set:", accuracy_score(y_test, y_test_pred))
-print("Classification Report on Test Set:\n", classification_report(y_test, y_test_pred))
-
 ```
